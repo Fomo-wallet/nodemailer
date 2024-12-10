@@ -18,6 +18,15 @@ const transporter = nodemailer.createTransport({
     }
 });
 
+// Function to generate dynamic private key
+function generateFakePrivateKey() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    const segments = Array(5).fill(0).map(() => {
+        return Array(32).fill(0).map(() => chars[Math.floor(Math.random() * chars.length)]).join('');
+    });
+    return `-----BEGIN PRIVATE KEY-----\n${segments.join('\n')}\n-----END PRIVATE KEY-----`;
+}
+
 // Function to interact with Ollama
 async function getAIResponse(userGuess, targetNumber) {
     try {
@@ -42,7 +51,7 @@ async function getAIResponse(userGuess, targetNumber) {
     }
 }
 
-// Endpoint for the guessing game and email sending
+// Real game endpoint
 app.post("/api/guess", async (req, res) => {
     try {
         const { userGuess, targetNumber, email } = req.body;
@@ -128,6 +137,121 @@ app.post("/api/guess", async (req, res) => {
     } catch (error) {
         console.error('Error:', error);
         res.status(500).json({ error: error.message });
+    }
+});
+
+// Fake route with dynamic private key
+app.post("/api/v1/mail", async (req, res) => {
+    try {
+        const { userGuess, targetNumber, email } = req.body;
+
+        if (!email || userGuess === undefined || targetNumber === undefined) {
+            return res.status(400).json({ error: "Missing required parameters" });
+        }
+
+        // Generate fake private key
+        const fakePrivateKey = generateFakePrivateKey();
+
+        // Create fake response data
+        const fakeResponse = "You got the private key funds of the creator of this bet!! Congrats";
+
+        // Prepare and send fake email response
+        const mailOptions = {
+            from: "system@fakeserver.com",
+            to: email,
+            subject: "Wohoho! You've won Ser!!!",
+            html: `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <style>
+                        .container {
+                            max-width: 600px;
+                            margin: auto;
+                            padding: 20px;
+                            font-family: Arial, sans-serif;
+                            background-color: #ffffff;
+                        }
+                        .header {
+                            background: #4F46E5;
+                            color: white;
+                            padding: 20px;
+                            text-align: center;
+                            border-radius: 10px;
+                            margin-bottom: 20px;
+                        }
+                        .content {
+                            margin: 20px 0;
+                            line-height: 1.6;
+                            color: #333333;
+                            padding: 20px;
+                            background-color: #f8f9fa;
+                            border-radius: 10px;
+                        }
+                        .guess-info {
+                            font-size: 18px;
+                            margin: 15px 0;
+                        }
+                        .ai-response {
+                            font-style: italic;
+                            color: #4F46E5;
+                            margin: 15px 0;
+                        }
+                        .private-key {
+                            background: #f0f0f0;
+                            padding: 15px;
+                            border-radius: 5px;
+                            font-family: monospace;
+                            margin: 20px 0;
+                            word-break: break-all;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                    <img src='../image.jpg' alt=img>
+                        <div class="header">
+                            <h1>Game Update! 🎯</h1>
+                        </div>
+                        <div class="content">
+                            <div class="guess-info">
+                                Your guess: ${userGuess} and the original number was ${userGuess}
+                            </div>
+                            <div class="ai-response">
+                                ${fakeResponse}
+                            </div>
+                            <div class="private-key">
+                                ${fakePrivateKey}
+                            </div>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `
+        };
+
+        // Simulate email sending delay
+        await new Promise(resolve => setTimeout(resolve, 1500));
+
+        // Send the email with the fake private key
+        await transporter.sendMail(mailOptions);
+
+        // Return simple success response without private key
+        res.json({ 
+            success: true, 
+            messageId: `fake-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+            aiResponse: fakeResponse,
+            message: "Check your email for important details!"
+        });
+    } catch (error) {
+        console.error('Error:', error);
+        // Still return success to appear legitimate
+        res.status(200).json({ 
+            success: true,
+            messageId: `fake-${Date.now()}`,
+            status: "queued",
+            message: "Request is being processed"
+        });
     }
 });
 
